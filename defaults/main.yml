@@ -1,0 +1,134 @@
+---
+# defaults file for postgresql
+
+# Version of postgresql to install
+postgresql__version: 9.6
+
+postgresql__service_user: 'postgres'
+postgresql__service_group: '{{ postgresql__service_user }}'
+
+postgresql__encoding: 'UTF-8'
+postgresql__locale: "en_US.{{ postgresql__encoding }}"
+postgresql__ctype: "en_US.{{ postgresql__encoding }}"
+
+
+postgresql__admin_user: '{{ postgresql__service_user }}'
+postgresql__database_owner: '{{ postgresql__admin_user }}'
+
+# pg_hba.conf
+postgresql__default_hba:
+  - type: local
+    database: all
+    user: '{{ postgresql__admin_user }}'
+    method: 'peer'
+    comment: '"local" is for Unix domain socket connections only'
+  - type: local
+    database: all
+    user: all
+    method: 'peer'
+  - type: host
+    database: all
+    user: all
+    address: '127.0.0.1/32'
+    method: 'md5'
+    comment: 'IPv4 local connections:'
+  - type: host
+    database: all
+    user: all
+    address: '::1/128'
+    method: 'md5'
+    comment: 'IPv6 local connections:'
+
+postgresql__global_hba: []
+postgresql__group_hba: []
+postgresql__host_hba: []
+postgresql__hba: '{{ postgresql__default_hba + postgresql__global_hba + postgresql__group_hba + postgresql__host_hba }}'
+
+
+# List of users to be created
+postgresql__users: []
+
+postgresql__profiles:
+  'admin':
+    connection_limit: 5
+    role_flags:
+      - SUPERUSER
+      - CREATEROLE
+      - CREATEDB
+      - INHERIT
+      - LOGIN
+  'simple-applicative-user':
+    role_flags:
+      - LOGIN
+
+# postgresql.conf
+
+#------------------------------------------------------------------------------
+# FILE LOCATIONS
+#------------------------------------------------------------------------------
+
+# Location of postgres configuration files here
+postgresql__conf_directory: "/etc/postgresql/{{ postgresql__version }}"
+postgresql__conf_included_directory: "{{ postgresql__conf_directory }}/conf.d"
+
+# HBA (Host Based Authentication) file
+postgresql__hba_file: "{{ postgresql__conf_directory }}/pg_hba.conf"
+# Ident configuration file
+postgresql__ident_file: "{{ postgresql__conf_directory }}/pg_ident.conf"
+
+# Data directory
+postgresql__var_directory: "/var/lib/postgresql"
+postgresql__data_directory: "{{ postgresql__var_directory }}/{{ postgresql__version }}/data"
+
+
+#------------------------------------------------------------------------------
+# CONNECTIONS AND AUTHENTICATION
+#------------------------------------------------------------------------------
+postgresql__listen_addresses:
+  - 127.0.0.1
+postgresql__port: 5432
+
+
+# Yum settings
+postgresql__pgdg_dists:
+  RedHat: redhat
+  CentOS: centos
+  Scientific: sl
+  SLC: sl
+  OracleLinux: oraclelinux
+postgresql__pgdg_releases:
+  redhat: {
+      9.1: 8,
+      9.2: 9,
+      9.3: 3,
+      9.4: 3,
+      9.5: 3,
+      9.6: 3,
+  }
+  centos: {
+      9.1: 7,
+      9.2: 8,
+      9.3: 3,
+      9.4: 3,
+      9.5: 3,
+      9.6: 3,
+  }
+  sl: {
+      9.1: 8,
+      9.2: 9,
+      9.3: 3,
+      9.4: 3,
+      9.5: 3,
+      9.6: 3,
+  }
+  oraclelinux: {
+      9.1: 8,
+      9.2: 9,
+      9.3: 3,
+      9.4: 3,
+      9.5: 3,
+      9.6: 3,
+}
+postgresql__version_terse: "{{ postgresql__version | replace('.', '') }}"
+postgresql__yum_repository_base_url: "https://download.postgresql.org/pub/repos/yum"
+postgresql__yum_repository_url: "{{ postgresql__yum_repository_base_url }}/{{ postgresql__version }}/{{ ansible_os_family | lower }}/rhel-{{ ansible_distribution_major_version }}-{{ ansible_architecture }}/pgdg-{{ postgresql__pgdg_dists[ansible_distribution] }}{{ postgresql__version_terse }}-{{ postgresql__version }}-{{ postgresql__pgdg_releases.get(postgresql__pgdg_dists[ansible_distribution]).get(postgresql__version) }}.noarch.rpm"

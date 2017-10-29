@@ -1,0 +1,7 @@
+---
+
+- name: Ensure postgresql is started and enabled on boot
+  service:
+    name:  '{{ postgresql__service_name }}'
+    enabled: yes
+    state: started
