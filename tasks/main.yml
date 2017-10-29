@@ -21,8 +21,8 @@
 - import_tasks: service.yml
   tags: ['postgresql', 'postgresql-service']
 
-- import_tasks: databases.yml
-  tags: ['postgresql', 'postgresql-databases']
-
 - import_tasks: users.yml
   tags: ['postgresql', 'postgresql-users']
+
+- import_tasks: databases.yml
+  tags: ['postgresql', 'postgresql-databases']
