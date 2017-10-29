@@ -1,0 +1,21 @@
+---
+# The standard ca-certs are needed because  without them apt_key will fail to
+# validate www.postgresql.org (or probably any other source).
+- name: Make sure the CA certificates are available
+  yum:
+    name:  ca-certificates
+    state: present
+
+- name: Add PostgreSQL repository
+  yum:
+    name: "{{ postgresql__yum_repository_url }}"
+    state: present
+
+- name: Install PostgreSQL
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "postgresql{{ postgresql__version_terse }}-server"
+    - "postgresql{{ postgresql__version_terse }}"
+    - "postgresql{{ postgresql__version_terse }}-contrib"

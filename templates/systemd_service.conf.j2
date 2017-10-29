@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# Systemd unit file override to specify user/group as well as separate config
+# and data directories.
+[Service]
+User={{ postgresql__service_user }}
+Group={{ postgresql__service_group }}
+
+Environment=PGDATA={{ postgresql__data_directory }}
+
+ExecStartPre=
+ExecStartPre={{ postgresql__bin_directory }}/postgresql{{ postgresql__version_terse }}-check-db-dir {{ postgresql__data_directory }}

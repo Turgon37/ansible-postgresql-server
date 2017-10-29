@@ -1,0 +1,23 @@
+---
+
+- name: Add repository
+  apt_repository:
+    repo:         'deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main'
+    filename:     'postgresql'
+    update_cache: yes
+    state:        present
+
+- name: Add APT key
+  apt_key:
+    id:    ACCC4CF8
+    url:   https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
+- name: Install PostgreSQL
+  apt:
+    name:  '{{ item }}'
+    state: present
+  with_items:
+    - "postgresql-client-{{ postgresql__version_terse }}"
+    - "postgresql-{{ postgresql__version_terse }}"
+    - "postgresql-contrib-{{ postgresql__version_terse }}"

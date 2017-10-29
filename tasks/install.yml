@@ -1,0 +1,14 @@
+---
+- name: Install the required packages
+  package:
+    name: '{{ item }}'
+    state: present
+  with_items: '{{ postgresql__packages }}'
+
+- include_tasks: install_apt.yml
+  when: ansible_pkg_mgr == 'apt'
+
+- include_tasks: install_yum.yml
+  when: ansible_pkg_mgr == 'yum'
+
+- import_tasks: install_extensions.yml

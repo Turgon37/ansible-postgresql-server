@@ -1,0 +1,28 @@
+---
+# tasks file for postgresql
+
+- name: Include the OS specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml"
+        - "{{ ansible_distribution }}.yml"
+        - "{{ ansible_os_family }}.yml"
+        - "defaults.yml"
+      skip: true
+  tags: ['always']
+
+- import_tasks: install.yml
+  tags: ['postgresql', 'postgresql-install']
+
+- import_tasks: configure.yml
+  tags: ['postgresql', 'postgresql-configure']
+
+- import_tasks: service.yml
+  tags: ['postgresql', 'postgresql-service']
+
+- import_tasks: databases.yml
+  tags: ['postgresql', 'postgresql-databases']
+
+- import_tasks: users.yml
+  tags: ['postgresql', 'postgresql-users']

@@ -1,0 +1,60 @@
+---
+- name: Ensure PostgreSQL is running
+  service:
+    name:  '{{ postgresql__service_name }}'
+    state: started
+
+- name: Setup PostgreSQL databases
+  become:      yes
+  become_user: '{{ postgresql__admin_user }}'
+  postgresql_db:
+    name:       '{{ item.key }}'
+    owner:      '{{ item.value.owner | default(postgresql__database_owner) }}'
+    encoding:   '{{ item.value.encoding | default(postgresql__encoding) }}'
+    lc_collate: '{{ item.value.lc_collate | default(postgresql__locale) }}'
+    lc_ctype:   '{{ item.value.lc_ctype | default(postgresql__ctype) }}'
+    template:   "{{ item.value.template | default('template1') }}"
+    port:       '{{ postgresql__port }}'
+    login_user: '{{ postgresql__admin_user }}'
+    state:      present
+  with_dict: '{{ postgresql__databases }}'
+
+- name: Remove PUBLIC grants on databases
+  become:      yes
+  become_user: '{{ postgresql__admin_user }}'
+  postgresql_privs:
+    database:     '{{ item.key }}'
+    type:         database
+    roles:        PUBLIC
+    privs:        ALL
+    grant_option: no
+    login_user:   '{{ postgresql__admin_user }}'
+    state:        absent
+  with_dict: "{{ postgresql__databases }}"
+
+- name: Setup PostgreSQL 'public' schema
+  become:      yes
+  become_user: '{{ postgresql__admin_user }}'
+  postgresql_schema:
+    database:   '{{ item.key }}'
+    name:       'public'
+    owner:      '{{ item.value.owner | default(postgresql__database_owner) }}'
+    port:       '{{ postgresql__port }}'
+    login_user: '{{ postgresql__admin_user }}'
+    state:      present
+  with_dict: '{{ postgresql__databases }}'
+  when: item.value.schemas is not defined or item.value.schemas|length == 0
+
+- name: Remove PUBLIC grants on schemas
+  become:      yes
+  become_user: '{{ postgresql__admin_user }}'
+  postgresql_privs:
+    database:     '{{ item.key }}'
+    type:         schema
+    objs:         public
+    roles:        PUBLIC
+    privs:        ALL
+    grant_option: no
+    login_user:   '{{ postgresql__admin_user }}'
+    state:        absent
+  with_dict: '{{ postgresql__databases }}'

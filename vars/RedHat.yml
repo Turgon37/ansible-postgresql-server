@@ -1,0 +1,12 @@
+---
+# vars file for postgresql (RedHat specific)
+
+postgresql__packages:
+  - python-psycopg2
+
+postgresql__service_name: "postgresql-{{ postgresql__version }}"
+
+postgresql__var_directory: /var/lib/pgsql
+
+# Used to execute initdb
+postgresql__bin_directory: "/usr/pgsql-{{ postgresql__version }}/bin"
