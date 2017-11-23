@@ -37,3 +37,11 @@
     login_user:      '{{ postgresql__admin_user }}'
     state:           present
   with_dict: '{{ postgresql__users }}'
+  register: _postgresql__users
+  ignore_errors: True
+  no_log: yes
+
+- name: Extract error message from users setup
+  fail:
+    msg: "{{ _postgresql__users.results|reject('success')|map(attribute='msg')|list|join(' ') }}"
+  when: _postgresql__users|failed
