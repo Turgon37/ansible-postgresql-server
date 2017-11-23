@@ -21,6 +21,9 @@
 - import_tasks: service.yml
   tags: ['postgresql', 'postgresql-service']
 
+- meta: flush_handlers
+  tags: ['always']
+
 - import_tasks: users.yml
   tags: ['postgresql', 'postgresql-users']
 
