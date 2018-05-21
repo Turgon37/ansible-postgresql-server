@@ -1,25 +1,45 @@
 ---
-# defaults file for postgresql
+# defaults file for postgresql-server
 
 # Version of postgresql to install
-postgresql__version: 9.6
-
-postgresql__service_user: 'postgres'
-postgresql__service_group: '{{ postgresql__service_user }}'
-
-postgresql__encoding: 'UTF-8'
-postgresql__locale: "en_US.{{ postgresql__encoding }}"
-postgresql__ctype: "en_US.{{ postgresql__encoding }}"
+postgresql_server__version: 9.6
 
 
-postgresql__admin_user: '{{ postgresql__service_user }}'
-postgresql__database_owner: '{{ postgresql__admin_user }}'
+### SERVICE CONFIGURATION
+# ---------------------------------------
+postgresql_server__service_user: postgres
+postgresql_server__service_group: '{{ postgresql_server__service_user }}'
+
+# The name of the systemd postgresql service
+postgresql_server__service_name: 'postgresql-{{ postgresql_server__version }}'
+
+# If true the postgresql service will be started and enabled
+postgresql_server__service_enabled: True
+
+# If this is set to true, ansible will automatically restart postgresql daemon on changes
+postgresql_server__service_restartable: True
+
+# Path to the must restart stamp file
+postgresql_server__service_restart_stamp_file: /var/local/postgresql-must-restart-stamp
+
+# Path to systemd override directory
+postgresql_server__systemd_override_options_dir: '/etc/systemd/system/{{ postgresql_server__service_name }}.service.d/'
+
+
+### SERVER CONFIGURATION
+# ---------------------------------------
+postgresql_server__encoding: UTF-8
+postgresql_server__locale: 'en_US.{{ postgresql_server__encoding }}'
+postgresql_server__ctype: 'en_US.{{ postgresql_server__encoding }}'
+
+postgresql_server__admin_user: '{{ postgresql_server__service_user }}'
+postgresql_server__database_owner: '{{ postgresql_server__admin_user }}'
 
 # pg_hba.conf
-postgresql__default_hba:
+postgresql_server__default_hba:
   - type: local
     database: all
-    user: '{{ postgresql__admin_user }}'
+    user: '{{ postgresql_server__admin_user }}'
     method: 'peer'
     comment: '"local" is for Unix domain socket connections only'
   - type: local
@@ -39,17 +59,17 @@ postgresql__default_hba:
     method: 'md5'
     comment: 'IPv6 local connections:'
 
-postgresql__global_hba: []
-postgresql__group_hba: []
-postgresql__host_hba: []
-postgresql__hba: '{{ postgresql__default_hba + postgresql__global_hba + postgresql__group_hba + postgresql__host_hba }}'
-
+postgresql_server__global_hba: []
+postgresql_server__group_hba: []
+postgresql_server__host_hba: []
+postgresql_server__hba: '{{ postgresql_server__default_hba + postgresql_server__global_hba + postgresql_server__group_hba + postgresql_server__host_hba }}'
 
 # List of users to be created
-postgresql__users: []
+postgresql_server__users: []
 
-postgresql__profiles:
-  'admin':
+# Available profile for users specifications
+postgresql_server__profiles:
+  admin:
     connection_limit: 5
     role_flags:
       - SUPERUSER
@@ -57,9 +77,13 @@ postgresql__profiles:
       - CREATEDB
       - INHERIT
       - LOGIN
-  'simple-applicative-user':
+  simple-applicative-user:
     role_flags:
       - LOGIN
+
+# List of database to be created
+postgresql_server__databases: {}
+
 
 # postgresql.conf
 
@@ -68,35 +92,35 @@ postgresql__profiles:
 #------------------------------------------------------------------------------
 
 # Location of postgres configuration files here
-postgresql__conf_directory: "/etc/postgresql/{{ postgresql__version }}"
-postgresql__conf_included_directory: "{{ postgresql__conf_directory }}/conf.d"
+postgresql_server__conf_directory: "/etc/postgresql/{{ postgresql_server__version }}"
+postgresql_server__conf_included_directory: "{{ postgresql_server__conf_directory }}/conf.d"
 
 # HBA (Host Based Authentication) file
-postgresql__hba_file: "{{ postgresql__conf_directory }}/pg_hba.conf"
+postgresql_server__hba_file: "{{ postgresql_server__conf_directory }}/pg_hba.conf"
 # Ident configuration file
-postgresql__ident_file: "{{ postgresql__conf_directory }}/pg_ident.conf"
+postgresql_server__ident_file: "{{ postgresql_server__conf_directory }}/pg_ident.conf"
 
 # Data directory
-postgresql__var_directory: "/var/lib/postgresql"
-postgresql__data_directory: "{{ postgresql__var_directory }}/{{ postgresql__version }}/data"
+postgresql_server__var_directory: "/var/lib/postgresql"
+postgresql_server__data_directory: "{{ postgresql_server__var_directory }}/{{ postgresql_server__version }}/data"
 
 
 #------------------------------------------------------------------------------
 # CONNECTIONS AND AUTHENTICATION
 #------------------------------------------------------------------------------
-postgresql__listen_addresses:
+postgresql_server__listen_addresses:
   - 127.0.0.1
-postgresql__port: 5432
+postgresql_server__port: 5432
 
 
 # Yum settings
-postgresql__pgdg_dists:
+postgresql_server__pgdg_dists:
   RedHat: redhat
   CentOS: centos
   Scientific: sl
   SLC: sl
   OracleLinux: oraclelinux
-postgresql__pgdg_releases:
+postgresql_server__pgdg_releases:
   redhat: {
       9.1: 8,
       9.2: 9,
@@ -129,6 +153,6 @@ postgresql__pgdg_releases:
       9.5: 3,
       9.6: 3,
 }
-postgresql__version_terse: "{{ postgresql__version | replace('.', '') }}"
-postgresql__yum_repository_base_url: "https://download.postgresql.org/pub/repos/yum"
-postgresql__yum_repository_url: "{{ postgresql__yum_repository_base_url }}/{{ postgresql__version }}/{{ ansible_os_family | lower }}/rhel-{{ ansible_distribution_major_version }}-{{ ansible_architecture }}/pgdg-{{ postgresql__pgdg_dists[ansible_distribution] }}{{ postgresql__version_terse }}-{{ postgresql__version }}-{{ postgresql__pgdg_releases.get(postgresql__pgdg_dists[ansible_distribution]).get(postgresql__version) }}.noarch.rpm"
+postgresql_server__version_terse: "{{ postgresql_server__version | replace('.', '') }}"
+postgresql_server__yum_repository_base_url: "https://download.postgresql.org/pub/repos/yum"
+postgresql_server__yum_repository_url: "{{ postgresql_server__yum_repository_base_url }}/{{ postgresql_server__version }}/{{ ansible_os_family | lower }}/rhel-{{ ansible_distribution_major_version }}-{{ ansible_architecture }}/pgdg-{{ postgresql_server__pgdg_dists[ansible_distribution] }}{{ postgresql_server__version_terse }}-{{ postgresql_server__version }}-{{ postgresql_server__pgdg_releases.get(postgresql_server__pgdg_dists[ansible_distribution]).get(postgresql_server__version) }}.noarch.rpm"

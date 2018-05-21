@@ -55,7 +55,7 @@
 
 # ----------------------------------
 # TYPE{{ ' ' * ((10 - 'TYPE' | length) | abs) }} DATABASE{{ ' ' * ((40 - 'DATABASE' | length) | abs) }} USER{{ ' ' * ((40 - 'USER' | length) | abs) }} ADDRESS{{ ' ' * ((30 - 'ADDRESS' | length) | abs) }} METHOD
-{% for rule in postgresql__hba %}
+{% for rule in postgresql_server__hba %}
 {%   if rule.comment is defined %}
 
 # {{ rule.comment }}

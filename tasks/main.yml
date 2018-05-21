@@ -2,13 +2,13 @@
 # tasks file for postgresql
 
 - name: Include the OS specific variables
-  include_vars: "{{ item }}"
+  include_vars: '{{ item }}'
   with_first_found:
     - files:
-        - "{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml"
-        - "{{ ansible_distribution }}.yml"
-        - "{{ ansible_os_family }}.yml"
-        - "defaults.yml"
+        - '{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml'
+        - '{{ ansible_distribution }}.yml'
+        - '{{ ansible_os_family }}.yml'
+        - defaults.yml
       skip: true
   tags: ['always']
 
@@ -24,8 +24,10 @@
 - meta: flush_handlers
   tags: ['always']
 
-- import_tasks: users.yml
+- include_tasks: users.yml
+  when: postgresql_server__service_enabled|bool
   tags: ['postgresql', 'postgresql-users']
 
-- import_tasks: databases.yml
+- include_tasks: databases.yml
+  when: postgresql_server__service_enabled|bool
   tags: ['postgresql', 'postgresql-databases']

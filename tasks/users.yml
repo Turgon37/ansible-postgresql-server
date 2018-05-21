@@ -2,30 +2,34 @@
 - name: Assert users settings
   fail:
     msg: 'You cannot set a user settings that is already set in the user profile'
-  with_dict: "{{ postgresql__users }}"
-  when: item.value.profile is defined and item.value.profile in postgresql__profiles.keys() 
-          and (item.value.keys() | intersect(postgresql__profiles[item.value.profile].keys()) ) | length != 0
+  with_dict: "{{ postgresql_server__users }}"
+  when: item.value.profile is defined and item.value.profile in postgresql_server__profiles.keys()
+          and (item.value.keys() | intersect(postgresql_server__profiles[item.value.profile].keys()) ) | length != 0
+  tags: ['always']
 
 - name: Check users profile
   assert:
     that:
-      - item.value.profile is not defined or item.value.profile is defined and item.value.profile in postgresql__profiles.keys()
-  with_dict: "{{ postgresql__users }}"
+      - item.value.profile is not defined or item.value.profile is defined and item.value.profile in postgresql_server__profiles.keys()
+  with_dict: '{{ postgresql_server__users }}'
+  tags: ['always']
 
 - name: Apply user profile
   set_fact:
-    postgresql__users: '{{ postgresql__users|combine({item.key: (item.value | combine(postgresql__profiles[item.value.profile]))}) }}'
-  with_dict: '{{ postgresql__users }}'
-  when: item.value.profile is defined and item.value.profile in postgresql__profiles.keys()
+    postgresql_server__users: '{{ postgresql_server__users|combine({item.key: (item.value | combine(postgresql_server__profiles[item.value.profile]))}) }}'
+  with_dict: '{{ postgresql_server__users }}'
+  when: item.value.profile is defined and item.value.profile in postgresql_server__profiles.keys()
+  tags: ['always']
 
 - name: Ensure PostgreSQL is running
   service:
-    name:  '{{ postgresql__service_name }}'
+    name:  '{{ postgresql_server__service_name }}'
     state: started
+  tags: ['postgresql', 'postgresql-users']
 
 - name: Setup PostgreSQL users
   become:      yes
-  become_user: '{{ postgresql__admin_user }}'
+  become_user: '{{ postgresql_server__admin_user }}'
   postgresql_user:
     name:            '{{ item.key }}'
     password:        '{{ item.value.password|d(omit) }}'
@@ -33,15 +37,17 @@
     expires:         '{{ item.value.expires|d(omit) }}'
     #conn_limit:    "{{ item.value.connection_limit | default(omit) }}"
     role_attr_flags: "{% if item.value.role_flags is defined %}{{ item.value.role_flags if item.value.role_flags is string else item.value.role_flags|join(',') }}{% else %}{{ omit }}{% endif %}"
-    port:            '{{ postgresql__port }}'
-    login_user:      '{{ postgresql__admin_user }}'
+    port:            '{{ postgresql_server__port }}'
+    login_user:      '{{ postgresql_server__admin_user }}'
     state:           present
-  with_dict: '{{ postgresql__users }}'
-  register: _postgresql__users
+  with_dict: '{{ postgresql_server__users }}'
+  register: _postgresql_server__users
   ignore_errors: True
   no_log: yes
+  tags: ['postgresql', 'postgresql-users']
 
 - name: Extract error message from users setup
   fail:
-    msg: "{{ _postgresql__users.results|reject('success')|map(attribute='msg')|list|join(' ') }}"
-  when: _postgresql__users|failed
+    msg: "{{ _postgresql_server__users.results|reject('success')|map(attribute='msg')|list|join(' ') }}"
+  when: _postgresql_server__users is failed
+  tags: ['postgresql', 'postgresql-users']

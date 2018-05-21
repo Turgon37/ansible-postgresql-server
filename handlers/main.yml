@@ -1,7 +1,16 @@
 ---
-# handlers file for postgresql
+# handlers file for postgresql-server
 
-- name: restart-postgresql
+- name: restart-postgresql-daemon
   service:
-    name:  '{{ postgresql__service_name }}'
+    name:  '{{ postgresql_server__service_name }}'
     state: restarted
+  when: postgresql_server__service_enabled|bool and postgresql_server__service_restartable|bool
+  listen: restart-postgresql-server
+
+- name: mark-postgresql-daemon-to-restart
+  file:
+    path:  '{{ postgresql_server__service_restart_stamp_file }}'
+    state: touch
+  when: postgresql_server__service_enabled|bool and not postgresql_server__service_restartable|bool
+  listen: restart-postgresql-server
