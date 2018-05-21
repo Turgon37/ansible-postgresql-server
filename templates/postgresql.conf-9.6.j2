@@ -42,11 +42,11 @@
 # The default values of these variables are driven from the -D command-line
 # option or PGDATA environment variable, represented here as ConfigDir.
 
-data_directory = '{{ postgresql__data_directory }}'
+data_directory = '{{ postgresql_server__data_directory }}'
 
-hba_file = '{{ postgresql__hba_file }}'
+hba_file = '{{ postgresql_server__hba_file }}'
 
-ident_file = '{{ postgresql__ident_file }}'
+ident_file = '{{ postgresql_server__ident_file }}'
 
 # If external_pid_file is not explicitly set, no extra PID file is written.
 #external_pid_file = ''			# write an extra PID file
@@ -59,9 +59,9 @@ ident_file = '{{ postgresql__ident_file }}'
 
 # - Connection Settings -
 
-listen_addresses = '{{ postgresql__listen_addresses | join(',') }}'
+listen_addresses = '{{ postgresql_server__listen_addresses | join(',') }}'
 
-port = {{ postgresql__port | int }}
+port = {{ postgresql_server__port | int }}
 
 max_connections = 100			# (change requires restart)
 #superuser_reserved_connections = 3	# (change requires restart)
@@ -633,7 +633,7 @@ default_text_search_config = 'pg_catalog.english'
 # default postgresql.conf.
 
 # include files ending in '.conf' from
-include_dir = '{{ postgresql__conf_included_directory }}'
+include_dir = '{{ postgresql_server__conf_included_directory }}'
 
 #include_if_exists = 'exists.conf'	# include file only if it exists
 #include = 'special.conf'		# include file

@@ -8,7 +8,7 @@
 
 - name: Add PostgreSQL repository
   yum:
-    name: "{{ postgresql__yum_repository_url }}"
+    name: "{{ postgresql_server__yum_repository_url }}"
     state: present
 
 - name: Install PostgreSQL
@@ -16,6 +16,6 @@
     name: "{{ item }}"
     state: present
   with_items:
-    - "postgresql{{ postgresql__version_terse }}-server"
-    - "postgresql{{ postgresql__version_terse }}"
-    - "postgresql{{ postgresql__version_terse }}-contrib"
+    - "postgresql{{ postgresql_server__version_terse }}-server"
+    - "postgresql{{ postgresql_server__version_terse }}"
+    - "postgresql{{ postgresql_server__version_terse }}-contrib"

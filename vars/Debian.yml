@@ -1,5 +1,5 @@
 ---
 # vars file for postgresql (Debian specific)
 
-postgresql__packages:
+postgresql_server__packages:
   - python-psycopg2

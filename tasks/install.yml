@@ -1,9 +1,10 @@
 ---
+
 - name: Install the required packages
   package:
     name: '{{ item }}'
     state: present
-  with_items: '{{ postgresql__packages }}'
+  with_items: '{{ postgresql_server__packages }}'
 
 - include_tasks: install_apt.yml
   when: ansible_pkg_mgr == 'apt'
