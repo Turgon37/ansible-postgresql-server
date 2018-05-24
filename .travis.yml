@@ -7,8 +7,6 @@ services:
 
 env:
   # Provide a list of OSes we want to use for testing.
-  - DISTRIBUTION: debian8
-  - DISTRIBUTION: debian9
   - DISTRIBUTION: centos7
 
 script:
