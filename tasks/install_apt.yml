@@ -3,7 +3,7 @@
 - name: Add repository
   apt_repository:
     repo:         'deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main'
-    filename:     'postgresql'
+    filename:     postgresql
     update_cache: yes
     state:        present
 
@@ -19,6 +19,6 @@
     update_cache: True
     state:        present
   with_items:
-    - 'postgresql-client-{{ postgresql_server__version_terse }}'
-    - 'postgresql-{{ postgresql_server__version_terse }}'
-    - 'postgresql-contrib-{{ postgresql_server__version_terse }}'
+    - 'postgresql-client-{{ postgresql_server__version }}'
+    - 'postgresql-{{ postgresql_server__version }}'
+    - 'postgresql-contrib-{{ postgresql_server__version }}'

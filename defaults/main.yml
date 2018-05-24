@@ -153,6 +153,6 @@ postgresql_server__pgdg_releases:
       9.5: 3,
       9.6: 3,
 }
-postgresql_server__version_terse: "{{ postgresql_server__version | replace('.', '') }}"
+postgresql_server__version_terse: "{{ postgresql_server__version|replace('.', '') }}"
 postgresql_server__yum_repository_base_url: "https://download.postgresql.org/pub/repos/yum"
 postgresql_server__yum_repository_url: "{{ postgresql_server__yum_repository_base_url }}/{{ postgresql_server__version }}/{{ ansible_os_family | lower }}/rhel-{{ ansible_distribution_major_version }}-{{ ansible_architecture }}/pgdg-{{ postgresql_server__pgdg_dists[ansible_distribution] }}{{ postgresql_server__version_terse }}-{{ postgresql_server__version }}-{{ postgresql_server__pgdg_releases.get(postgresql_server__pgdg_dists[ansible_distribution]).get(postgresql_server__version) }}.noarch.rpm"
