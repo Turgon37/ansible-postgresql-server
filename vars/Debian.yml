@@ -3,3 +3,6 @@
 
 postgresql_server__packages:
   - python-psycopg2
+
+# Used to execute initdb
+postgresql_server__bin_directory: '/usr/lib/postgresql/{{ postgresql_server__version }}/bin'
