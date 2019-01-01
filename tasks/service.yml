@@ -2,46 +2,51 @@
 
 - name: Ensure systemd override directory is created
   file:
-    path:  '{{ postgresql_server__systemd_override_options_dir }}'
+    path: '{{ postgresql_server__systemd_override_options_directory }}'
     state: directory
   when: ansible_service_mgr == 'systemd'
 
-- name: Install systemd options override file
+- name: Install systemd options file
   template:
-    src:  postgresql.override.service.j2
-    dest: '{{ postgresql_server__systemd_override_options_dir }}/override.conf'
+    src: systemd.service.d.j2
+    dest: '{{ postgresql_server__systemd_override_options_directory }}/custom.conf'
   when: ansible_service_mgr == 'systemd'
   notify: ['restart-postgresql-server']
   register: _postgresql_server__service
 
 - name: Reload systemd
   systemd:
-    daemon_reload: yes
-  when: ansible_service_mgr == 'systemd' and _postgresql_server__service is changed
+    daemon_reload: true
+  when: ansible_service_mgr == 'systemd'
+    and _postgresql_server__service is changed
+  changed_when: true
 
 - meta: flush_handlers
 
 - name: Ensure postgresql daemon is started and enabled on boot
   service:
-    name:    '{{ postgresql_server__service_name }}'
+    name: '{{ postgresql_server__service_name }}'
     enabled: '{{ postgresql_server__service_enabled|bool }}'
-    state:   "{{ postgresql_server__service_enabled|bool|ternary('started', 'stopped') }}"
+    state: "{{ postgresql_server__service_enabled|bool|ternary('started', 'stopped') }}"
 
 # restart feature
+
 - name: Test if postgresql need to be restart
   stat:
     path: '{{ postgresql_server__service_restart_stamp_file }}'
   register: _postgresql_server__restart_file
-  check_mode: False
+  check_mode: false
 
 - name: Restart postgresql if needed and allowed
   service:
-    name:  '{{ postgresql_server__service_name }}'
+    name: '{{ postgresql_server__service_name }}'
     state: restarted
-  when: postgresql_server__service_enabled|bool and postgresql_server__service_restartable|bool and _postgresql_server__restart_file.stat.exists
+  when: postgresql_server__service_enabled|bool
+    and postgresql_server__service_restartable|bool
+    and _postgresql_server__restart_file.stat.exists
 
 - name: Remove stamp file if postgresql daemon is disabled
   file:
-    path:  '{{ postgresql_server__service_restart_stamp_file }}'
+    path: '{{ postgresql_server__service_restart_stamp_file }}'
     state: absent
   when: not postgresql_server__service_enabled|bool

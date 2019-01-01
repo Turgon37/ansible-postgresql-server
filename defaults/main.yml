@@ -1,6 +1,18 @@
 ---
 # defaults file for postgresql-server
 
+### INSTALL CONFIGURATION
+# ---------------------------------------
+# List of packages required for Postgresql installation
+postgresql_server__required_packages_names:
+  - python-psycopg2
+
+# List of PostgreSQL packages to install
+postgresql_server__packages_names:
+  - 'postgresql{{ postgresql_server__version_terse }}-server'
+  - 'postgresql{{ postgresql_server__version_terse }}'
+  - 'postgresql{{ postgresql_server__version_terse }}-contrib'
+
 # Version of postgresql to install
 postgresql_server__version: 9.6
 
@@ -14,16 +26,17 @@ postgresql_server__service_group: '{{ postgresql_server__service_user }}'
 postgresql_server__service_name: 'postgresql-{{ postgresql_server__version }}'
 
 # If true the postgresql service will be started and enabled
-postgresql_server__service_enabled: True
+postgresql_server__service_enabled: true
 
 # If this is set to true, ansible will automatically restart postgresql daemon on changes
-postgresql_server__service_restartable: True
+postgresql_server__service_restartable: true
 
 # Path to the must restart stamp file
 postgresql_server__service_restart_stamp_file: /var/local/postgresql-must-restart-stamp
 
 # Path to systemd override directory
-postgresql_server__systemd_override_options_dir: '/etc/systemd/system/{{ postgresql_server__service_name }}.service.d/'
+postgresql_server__systemd_override_options_directory:
+  '/etc/systemd/system/{{ postgresql_server__service_name }}.service.d/'
 
 
 ### SERVER CONFIGURATION
@@ -87,9 +100,9 @@ postgresql_server__databases: {}
 
 # postgresql.conf
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # FILE LOCATIONS
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # Location of postgres configuration files here
 postgresql_server__conf_directory: "/etc/postgresql/{{ postgresql_server__version }}"
@@ -105,9 +118,9 @@ postgresql_server__var_directory: "/var/lib/postgresql"
 postgresql_server__data_directory: "{{ postgresql_server__var_directory }}/{{ postgresql_server__version }}/data"
 
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # CONNECTIONS AND AUTHENTICATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 postgresql_server__listen_addresses:
   - 127.0.0.1
 postgresql_server__port: 5432
@@ -121,38 +134,35 @@ postgresql_server__pgdg_dists:
   SLC: sl
   OracleLinux: oraclelinux
 postgresql_server__pgdg_releases:
-  redhat: {
-      9.1: 8,
-      9.2: 9,
-      9.3: 3,
-      9.4: 3,
-      9.5: 3,
-      9.6: 3,
-  }
-  centos: {
-      9.1: 7,
-      9.2: 8,
-      9.3: 3,
-      9.4: 3,
-      9.5: 3,
-      9.6: 3,
-  }
-  sl: {
-      9.1: 8,
-      9.2: 9,
-      9.3: 3,
-      9.4: 3,
-      9.5: 3,
-      9.6: 3,
-  }
-  oraclelinux: {
-      9.1: 8,
-      9.2: 9,
-      9.3: 3,
-      9.4: 3,
-      9.5: 3,
-      9.6: 3,
-}
+  redhat:
+    9.1: 8
+    9.2: 9
+    9.3: 3
+    9.4: 3
+    9.5: 3
+    9.6: 3
+  centos:
+    9.1: 7
+    9.2: 8
+    9.3: 3
+    9.4: 3
+    9.5: 3
+    9.6: 3
+  sl:
+    9.1: 8
+    9.2: 9
+    9.3: 3
+    9.4: 3
+    9.5: 3
+    9.6: 3
+  oraclelinux:
+    9.1: 8
+    9.2: 9
+    9.3: 3
+    9.4: 3
+    9.5: 3
+    9.6: 3
+
 postgresql_server__version_terse: "{{ postgresql_server__version|replace('.', '') }}"
 postgresql_server__yum_repository_base_url: "https://download.postgresql.org/pub/repos/yum"
 postgresql_server__yum_repository_url: "{{ postgresql_server__yum_repository_base_url }}/{{ postgresql_server__version }}/{{ ansible_os_family | lower }}/rhel-{{ ansible_distribution_major_version }}-{{ ansible_architecture }}/pgdg-{{ postgresql_server__pgdg_dists[ansible_distribution] }}{{ postgresql_server__version_terse }}-{{ postgresql_server__version }}-{{ postgresql_server__pgdg_releases.get(postgresql_server__pgdg_dists[ansible_distribution]).get(postgresql_server__version) }}.noarch.rpm"

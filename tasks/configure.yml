@@ -1,127 +1,109 @@
 ---
 - name: "Ensure service group '{{ postgresql_server__service_group }}' is present"
   group:
-    name:   '{{ postgresql_server__service_group }}'
-    system: yes
-    state:  present
-  notify: [ 'restart-postgresql-server' ]
+    name: '{{ postgresql_server__service_group }}'
+    system: true
+    state: present
+  notify: ['restart-postgresql-server']
 
 - name: "Ensure service user '{{ postgresql_server__service_user }}' is present"
   user:
-    name:       '{{ postgresql_server__service_user }}'
-    group:      '{{ postgresql_server__service_group }}'
-    shell:      /bin/bash
-    home:       '{{ postgresql_server__var_directory }}'
-    comment:    PostgreSQL Server
-    createhome: no
-    system:     yes
-    state:      present
-  notify: [ 'restart-postgresql-server' ]
+    name: '{{ postgresql_server__service_user }}'
+    group: '{{ postgresql_server__service_group }}'
+    shell: /bin/bash
+    home: '{{ postgresql_server__var_directory }}'
+    comment: PostgreSQL Server
+    createhome: false
+    system: true
+    state: present
+  notify: ['restart-postgresql-server']
 
 - name: Ensure the locale for lc_collate and lc_ctype is generated
   locale_gen:
-    name:  '{{ item }}'
+    name: '{{ item }}'
     state: present
   with_items:
     - '{{ postgresql_server__locale }}'
     - '{{ postgresql_server__ctype }}'
-  when: ansible_os_family == "Debian"
-  notify: [ 'restart-postgresql-server' ]
+  when: ansible_os_family == 'Debian'
+  notify: ['restart-postgresql-server']
 
 - name: Ensure the locale is generated
   command: "localedef -c -i {{ item.split('.')[0] }} -f {{ item.split('.')[1] }} {{ item }}"
   with_items:
     - '{{ postgresql_server__locale }}'
     - '{{ postgresql_server__ctype }}'
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family == 'RedHat'
   changed_when: false
 
 - name: Make sure the postgres data directory exists
   file:
-    path:  '{{ postgresql_server__data_directory }}'
+    path: '{{ postgresql_server__data_directory }}'
     owner: '{{ postgresql_server__service_user }}'
     group: '{{ postgresql_server__service_group }}'
     state: directory
-    mode:  0700
+    mode: 0700
   register: _postgresql_server__pgdata_dir_exist
 
 - name: Check whether the postgres data directory is initialized
   stat:
     path: '{{ postgresql_server__data_directory }}/PG_VERSION'
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family == 'RedHat'
   register: _postgresql_server__pgdata_dir_initialized
 
 - name: Initialize the database
-  become: yes
-  become_user: "{{ postgresql_server__service_user }}"
-  command: '{{ postgresql_server__bin_directory }}/initdb --pgdata={{ postgresql_server__data_directory }}
-    --locale={{ postgresql_server__locale }} --encoding={{ postgresql_server__encoding }}'
-  when: ansible_os_family == "RedHat" and (_postgresql_server__pgdata_dir_exist.changed or
-                                            not _postgresql_server__pgdata_dir_initialized.stat.exists)
+  become: true
+  become_user: '{{ postgresql_server__service_user }}'
+  command: >-
+    {{ postgresql_server__bin_directory }}/initdb
+    --pgdata={{ postgresql_server__data_directory }}
+    --locale={{ postgresql_server__locale }}
+    --encoding={{ postgresql_server__encoding }}
+  when: ansible_os_family == 'RedHat'
+    and (
+      _postgresql_server__pgdata_dir_exist.changed
+      or not _postgresql_server__pgdata_dir_initialized.stat.exists)
 
 - name: Ensure configuration directory exists
   file:
-    path:  '{{ postgresql_server__conf_directory }}'
+    path: '{{ postgresql_server__conf_directory }}'
     owner: '{{ postgresql_server__service_user }}'
     group: '{{ postgresql_server__service_group }}'
-    mode:  0750
+    mode: 0750
     state: directory
 
 - name: Ensure configuration included directory exists
   file:
-    name:  '{{ postgresql_server__conf_included_directory }}'
+    name: '{{ postgresql_server__conf_included_directory }}'
     owner: '{{ postgresql_server__service_user }}'
     group: '{{ postgresql_server__service_group }}'
-    mode:  0755
+    mode: 0755
     state: directory
 
 - name: Update configuration file pg_hba.conf
   template:
-    src:   pg_hba.conf.j2
-    dest:  '{{ postgresql_server__hba_file }}'
+    src: pg_hba.conf.j2
+    dest: '{{ postgresql_server__hba_file }}'
     owner: '{{ postgresql_server__service_user }}'
     group: '{{ postgresql_server__service_group }}'
-    mode:  0640
-  notify: [ 'restart-postgresql-server' ]
+    mode: 0640
+  notify: ['reload-postgresql-server']
 
 - name: Update configuration file postgresql.conf
   template:
-    src:   'postgresql.conf-{{ postgresql_server__version }}.j2'
-    dest:  '{{ postgresql_server__conf_directory }}/postgresql.conf'
+    src: 'postgresql.conf-{{ postgresql_server__version }}.j2'
+    dest: '{{ postgresql_server__conf_directory }}/postgresql.conf'
     owner: '{{ postgresql_server__service_user }}'
     group: '{{ postgresql_server__service_group }}'
-    mode:  0640
-  notify: [ 'restart-postgresql-server' ]
+    mode: 0640
+  notify: ['restart-postgresql-server']
 
 - name: Create symlink for postgresql.conf in data directory
   file:
-    src:   '{{ postgresql_server__conf_directory }}/postgresql.conf'
-    dest:  '{{ postgresql_server__data_directory }}/postgresql.conf'
+    src: '{{ postgresql_server__conf_directory }}/postgresql.conf'
+    dest: '{{ postgresql_server__data_directory }}/postgresql.conf'
     owner: '{{ postgresql_server__service_user }}'
     group: '{{ postgresql_server__service_group }}'
-    force: yes
+    force: true
     state: link
-  notify: [ 'restart-postgresql-server' ]
-
-- name: Ensure the systemd directory for PostgreSQL exists
-  file:
-    name:  '/etc/systemd/system/{{ postgresql_server__service_name }}.service.d'
-    mode:  0755
-    state: directory
-  when: ansible_service_mgr == "systemd"
-
-- name: Define customs configurations for systemd
-  template:
-    src:  systemd_service.conf.j2
-    dest: '/etc/systemd/system/{{ postgresql_server__service_name }}.service.d/custom.conf'
-  when: ansible_service_mgr == "systemd"
-  register: _postgresql_server__systemd_custom_conf
-
-- name: Reload systemd if needed
-  systemd:
-    daemon_reload: yes
-  when: _postgresql_server__systemd_custom_conf.changed
-
-- fail:
-    msg: 'Service manager other than systemd is not supported yet'
-  when: ansible_service_mgr != "systemd"
+  notify: ['restart-postgresql-server']
