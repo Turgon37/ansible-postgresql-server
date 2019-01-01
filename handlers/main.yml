@@ -12,6 +12,8 @@
 - name: mark-postgresql-daemon-to-restart
   file:
     path: '{{ postgresql_server__service_restart_stamp_file }}'
+    owner: '{{ postgresql_server__service_user }}'
+    group: '{{ postgresql_server__service_group }}'
     state: touch
   when: postgresql_server__service_enabled|bool
     and not postgresql_server__service_restartable|bool
