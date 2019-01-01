@@ -1,6 +1,2 @@
 # {{ ansible_managed }}
 
-{% if not postgresql_server__service_restartable|bool %}
-# Remove must restart stamp file
-ExecStartPre=-/usr/bin/env rm -f {{ postgresql_server__service_restart_stamp_file }}
-{% endif %}

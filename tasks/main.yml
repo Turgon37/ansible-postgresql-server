@@ -12,6 +12,11 @@
       skip: true
   tags: ['always']
 
+- name: Check role availability
+  fail:
+    msg: This module only works with systemd
+  when: not ansible_service_mgr in ['systemd']
+
 - name: Importing install tasks
   import_tasks: install.yml
   tags: ['postgresql-server', 'postgresql-server-install']

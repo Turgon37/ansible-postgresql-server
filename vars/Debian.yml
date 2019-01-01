@@ -1,8 +1,10 @@
 ---
 # vars file for postgresql (Debian specific)
 
-postgresql_server__packages:
-  - python-psycopg2
+postgresql_server__packages_names:
+  - 'postgresql-client-{{ postgresql_server__version }}'
+  - 'postgresql-{{ postgresql_server__version }}'
+  - 'postgresql-contrib-{{ postgresql_server__version }}'
 
 # Used to execute initdb
 postgresql_server__bin_directory: '/usr/lib/postgresql/{{ postgresql_server__version }}/bin'

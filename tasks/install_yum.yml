@@ -3,19 +3,12 @@
 # validate www.postgresql.org (or probably any other source).
 - name: Make sure the CA certificates are available
   yum:
-    name:  ca-certificates
+    name: ca-certificates
     state: present
+  tags: ['postgresql-server', 'postgresql-server-install']
 
 - name: Add PostgreSQL repository
   yum:
     name: '{{ postgresql_server__yum_repository_url }}'
     state: present
-
-- name: Install PostgreSQL
-  yum:
-    name: '{{ item }}'
-    state: present
-  with_items:
-    - 'postgresql{{ postgresql_server__version_terse }}-server'
-    - 'postgresql{{ postgresql_server__version_terse }}'
-    - 'postgresql{{ postgresql_server__version_terse }}-contrib'
+  tags: ['postgresql-server', 'postgresql-server-install']

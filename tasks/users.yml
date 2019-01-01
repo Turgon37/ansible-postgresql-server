@@ -41,7 +41,7 @@
     password: '{{ item.value.password|d(omit) }}'
     encrypted: '{{ item.value.encrypted|d(true) }}'
     expires: '{{ item.value.expires|d(omit) }}'
-    #conn_limit: "{{ item.value.connection_limit | default(omit) }}"
+    # conn_limit: "{{ item.value.connection_limit | default(omit) }}"
     role_attr_flags: "{% if item.value.role_flags is defined %}{{ item.value.role_flags if item.value.role_flags is string else item.value.role_flags|join(',') }}{% else %}{{ omit }}{% endif %}"
     port: '{{ postgresql_server__port }}'
     login_user: '{{ postgresql_server__admin_user }}'

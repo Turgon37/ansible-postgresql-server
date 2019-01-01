@@ -1,9 +1,6 @@
 ---
 # vars file for postgresql (RedHat specific)
 
-postgresql_server__packages:
-  - python-psycopg2
-
 postgresql_server__var_directory: /var/lib/pgsql
 
 # Used to execute initdb
