@@ -1,65 +1,71 @@
 ---
+
 - name: Ensure PostgreSQL is running
   service:
-    name:  '{{ postgresql_server__service_name }}'
+    name: '{{ postgresql_server__service_name }}'
     state: started
-  tags: ['postgresql', 'postgresql-databases']
+  tags: ['postgresql-server', 'postgresql-server-databases']
 
 - name: Setup PostgreSQL databases
-  become:      yes
+  become: true
   become_user: '{{ postgresql_server__admin_user }}'
   postgresql_db:
-    name:       '{{ item.key }}'
-    owner:      '{{ item.value.owner | default(postgresql_server__database_owner) }}'
-    encoding:   '{{ item.value.encoding | default(postgresql_server__encoding) }}'
+    name: '{{ item.key }}'
+    owner: '{{ item.value.owner | default(postgresql_server__database_owner) }}'
+    encoding: '{{ item.value.encoding | default(postgresql_server__encoding) }}'
     lc_collate: '{{ item.value.lc_collate | default(postgresql_server__locale) }}'
-    lc_ctype:   '{{ item.value.lc_ctype | default(postgresql_server__ctype) }}'
-    template:   "{{ item.value.template | default('template1') }}"
-    port:       '{{ postgresql_server__port }}'
+    lc_ctype: '{{ item.value.lc_ctype | default(postgresql_server__ctype) }}'
+    template: "{{ item.value.template | default('template1') }}"
+    port: '{{ postgresql_server__port }}'
     login_user: '{{ postgresql_server__admin_user }}'
-    state:      present
+    state: "{{ item.value.state|d('present') }}"
   with_dict: '{{ postgresql_server__databases }}'
-  tags: ['postgresql', 'postgresql-databases']
+  tags: ['postgresql-server', 'postgresql-server-databases']
 
 - name: Remove PUBLIC grants on databases
-  become:      yes
+  become: true
   become_user: '{{ postgresql_server__admin_user }}'
   postgresql_privs:
-    database:     '{{ item.key }}'
-    type:         database
-    roles:        PUBLIC
-    privs:        ALL
-    grant_option: no
-    login_user:   '{{ postgresql_server__admin_user }}'
-    state:        absent
+    database: '{{ item.key }}'
+    type: database
+    roles: PUBLIC
+    privs: ALL
+    grant_option: false
+    login_user: '{{ postgresql_server__admin_user }}'
+    state: absent
   with_dict: '{{ postgresql_server__databases }}'
-  tags: ['postgresql', 'postgresql-databases']
+  when: item.value.state|d('present') == 'present'
+  tags: ['postgresql-server', 'postgresql-server-databases']
 
 - name: Setup PostgreSQL 'public' schema
-  become:      yes
+  become: true
   become_user: '{{ postgresql_server__admin_user }}'
   postgresql_schema:
-    database:   '{{ item.key }}'
-    name:       'public'
-    owner:      '{{ item.value.owner | default(postgresql_server__database_owner) }}'
-    port:       '{{ postgresql_server__port }}'
+    database: '{{ item.key }}'
+    name: public
+    owner: '{{ item.value.owner | default(postgresql_server__database_owner) }}'
+    port: '{{ postgresql_server__port }}'
     login_user: '{{ postgresql_server__admin_user }}'
-    state:      present
+    state: present
   with_dict: '{{ postgresql_server__databases }}'
-  when: item.value.schemas is not defined or item.value.schemas|length == 0
-  tags: ['postgresql', 'postgresql-databases']
+  when: item.value.state|d('present') == 'present'
+    and (
+      item.value.schemas is not defined
+      or item.value.schemas|length == 0)
+  tags: ['postgresql-server', 'postgresql-server-databases']
 
 - name: Remove PUBLIC grants on schemas
-  become:      yes
+  become: true
   become_user: '{{ postgresql_server__admin_user }}'
   postgresql_privs:
-    database:     '{{ item.key }}'
-    type:         schema
-    objs:         public
-    roles:        PUBLIC
-    privs:        ALL
-    grant_option: no
-    login_user:   '{{ postgresql_server__admin_user }}'
-    state:        absent
+    database: '{{ item.key }}'
+    type: schema
+    objs: public
+    roles: PUBLIC
+    privs: ALL
+    grant_option: false
+    login_user: '{{ postgresql_server__admin_user }}'
+    state: absent
   with_dict: '{{ postgresql_server__databases }}'
-  tags: ['postgresql', 'postgresql-databases']
+  when: item.value.state|d('present') == 'present'
+  tags: ['postgresql-server', 'postgresql-server-databases']
