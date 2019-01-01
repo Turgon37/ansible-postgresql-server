@@ -12,22 +12,27 @@
       skip: true
   tags: ['always']
 
-- import_tasks: install.yml
-  tags: ['postgresql', 'postgresql-install']
+- name: Importing install tasks
+  import_tasks: install.yml
+  tags: ['postgresql-server', 'postgresql-server-install']
 
-- import_tasks: configure.yml
-  tags: ['postgresql', 'postgresql-configure']
+- name: Importing configuration tasks
+  import_tasks: configure.yml
+  tags: ['postgresql-server', 'postgresql-server-configure']
 
-- import_tasks: service.yml
-  tags: ['postgresql', 'postgresql-service']
+- name: Importing service tasks
+  import_tasks: service.yml
+  tags: ['postgresql-server', 'postgresql-server-service']
 
 - meta: flush_handlers
   tags: ['always']
 
-- include_tasks: users.yml
+- name: Optionally including users tasks
+  include_tasks: users.yml
   when: postgresql_server__service_enabled|bool
-  tags: ['postgresql', 'postgresql-users']
+  tags: ['postgresql-server', 'postgresql-server-users']
 
-- include_tasks: databases.yml
+- name: Optionally including databases tasks
+  include_tasks: databases.yml
   when: postgresql_server__service_enabled|bool
-  tags: ['postgresql', 'postgresql-databases']
+  tags: ['postgresql-server', 'postgresql-server-databases']
