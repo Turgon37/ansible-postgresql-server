@@ -6,21 +6,6 @@
     state: started
   tags: ['postgresql-server', 'postgresql-server-databases']
 
-- name: Setup PostgreSQL databases
-  become: true
-  become_user: '{{ postgresql_server__admin_user }}'
-  postgresql_db:
-    name: '{{ item.key }}'
-    owner: '{{ item.value.owner | default(postgresql_server__database_owner) }}'
-    encoding: '{{ item.value.encoding | default(postgresql_server__encoding) }}'
-    lc_collate: '{{ item.value.lc_collate | default(postgresql_server__locale) }}'
-    lc_ctype: '{{ item.value.lc_ctype | default(postgresql_server__ctype) }}'
-    template: "{{ item.value.template | default('template1') }}"
-    port: '{{ postgresql_server__port }}'
-    login_user: '{{ postgresql_server__admin_user }}'
-    state: "{{ item.value.state|d('present') }}"
-  with_dict: '{{ postgresql_server__databases }}'
-  tags: ['postgresql-server', 'postgresql-server-databases']
 
 - name: Remove PUBLIC grants on databases
   become: true

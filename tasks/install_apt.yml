@@ -1,16 +1,73 @@
 ---
 
-- name: Add repository
+- name: Download apt repository GPG key into local folder
+  get_url:
+    url: '{{ item.url }}'
+    dest: '/tmp/postgresql_server__gpg-{{ item.id }}'
+    mode: 0644
+  with_items: '{{
+    postgresql_server__gpg_keys[ansible_lsb.id]
+    if (ansible_lsb.id is defined and ansible_lsb.id in postgresql_server__gpg_keys)
+    else (
+      postgresql_server__gpg_keys[ansible_distribution]
+      if (ansible_distribution is defined and ansible_distribution in postgresql_server__gpg_keys)
+      else (
+        postgresql_server__gpg_keys[ansible_os_family]
+        if (ansible_os_family in postgresql_server__gpg_keys)
+        else ([])
+      )
+    )}}'
+  when: item.state|d('present') == 'present'
+  register: _postgresql_server__gpg_download
+  until: _postgresql_server__gpg_download is succeeded
+  retries: 5
+  delay: 2
+  check_mode: false
+  delegate_to: localhost
+  tags: ['postgresql-server', 'postgresql-server-install']
+
+- name: Upload PostgreSQL repository GPG key to server
+  copy:
+    src: '/tmp/postgresql_server__gpg-{{ item.id }}'
+    dest: '/tmp/postgresql_server__gpg-{{ item.id }}'
+  with_items: '{{
+    postgresql_server__gpg_keys[ansible_lsb.id]
+    if (ansible_lsb.id is defined and ansible_lsb.id in postgresql_server__gpg_keys)
+    else (
+      postgresql_server__gpg_keys[ansible_distribution]
+      if (ansible_distribution is defined and ansible_distribution in postgresql_server__gpg_keys)
+      else (
+        postgresql_server__gpg_keys[ansible_os_family]
+        if (ansible_os_family in postgresql_server__gpg_keys)
+        else ([])
+      )
+    )}}'
+  when: item.state|d('present') == 'present'
+  check_mode: false
+  tags: ['postgresql-server', 'postgresql-server-install']
+
+- name: Add postgresql repository GPG key to apt keyring
+  apt_key:
+    id: '{{ item.id }}'
+    file: "{{ omit if item.state|d('present') != 'present' else '/tmp/postgresql_server__gpg-'~item.id }}"
+    state: "{{ item.state|d('present') }}"
+  with_items: '{{
+    postgresql_server__gpg_keys[ansible_lsb.id]
+    if (ansible_lsb.id is defined and ansible_lsb.id in postgresql_server__gpg_keys)
+    else (
+      postgresql_server__gpg_keys[ansible_distribution]
+      if (ansible_distribution is defined and ansible_distribution in postgresql_server__gpg_keys)
+      else (
+        postgresql_server__gpg_keys[ansible_os_family]
+        if (ansible_os_family in postgresql_server__gpg_keys)
+        else ([])
+      )
+    )}}'
+  tags: ['postgresql-server', 'postgresql-server-install']
+
+- name: Add PostgreSQL repository
   apt_repository:
     repo: 'deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main'
     filename: postgresql
     update_cache: true
     state: present
-  tags: ['postgresql-server', 'postgresql-server-install']
-
-- name: Add APT key
-  apt_key:
-    id: ACCC4CF8
-    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
-    state: present
-  tags: ['postgresql-server', 'postgresql-server-install']

@@ -1,0 +1,66 @@
+---
+
+# Init
+
+- name: Check database prerequisites
+  assert:
+    that:
+      - postgresql_server__database is defined
+      - postgresql_server__database.name is defined
+      - postgresql_server__database.name is match('^[a-zA-Z][a-zA-Z0-9-_]+$')
+    msg: >-
+      postgresql_server__database must be defined with database specification
+  tags: ['always']
+
+# Service
+
+- name: 'Ensure PostgreSQL is running for {{ postgresql_server__database.name }}'
+  service:
+    name: '{{ postgresql_server__service_name }}'
+    state: started
+  when: postgresql_server__service_enabled|bool
+  tags: ['postgresql-server', 'postgresql-server-databases']
+
+- name: 'Fail if PostgreSQL cannot be running for {{ postgresql_server__database.name }}'
+  fail:
+    msg: PostgreSQL need to be running to apply users
+  when: not postgresql_server__service_enabled|bool
+  tags: ['postgresql-server', 'postgresql-server-databases']
+
+- name: 'Fail if database owner cannot exists for {{ postgresql_server__database.name }}'
+  fail:
+    msg: Database owner do not exists and cannot be created
+  when: postgresql_server__database.owner is defined
+    and postgresql_server__database.owner not in postgresql_server__roles
+  tags: ['postgresql-server', 'postgresql-server-databases']
+
+# Create database owner with minimal settings
+
+- name: 'Setup database owner for {{ postgresql_server__database.name }}'
+  become: true
+  become_user: '{{ postgresql_server__admin_user }}'
+  postgresql_user:
+    name: '{{ postgresql_server__database.owner }}'
+    port: '{{ postgresql_server__port }}'
+    login_user: '{{ postgresql_server__admin_user }}'
+    state: present
+  when: postgresql_server__database.owner is defined
+    and postgresql_server__database.state|d('present') == 'present'
+  tags: ['postgresql-server', 'postgresql-server-databases']
+
+# Add
+
+- name: 'Setup database {{ postgresql_server__database.name }}'
+  become: true
+  become_user: '{{ postgresql_server__admin_user }}'
+  postgresql_db:
+    name: '{{ postgresql_server__database.name }}'
+    owner: '{{ postgresql_server__database.owner|d(postgresql_server__database_owner) }}'
+    encoding: '{{ postgresql_server__database.encoding|d(postgresql_server__encoding) }}'
+    lc_collate: '{{ postgresql_server__database.lc_collate|d(postgresql_server__locale) }}'
+    lc_ctype: '{{ postgresql_server__database.lc_ctype|d(postgresql_server__ctype) }}'
+    template: "{{ postgresql_server__database.template|d('template1') }}"
+    port: '{{ postgresql_server__port }}'
+    login_user: '{{ postgresql_server__admin_user }}'
+    state: "{{ postgresql_server__database.state|d('present') }}"
+  tags: ['postgresql-server', 'postgresql-server-databases']

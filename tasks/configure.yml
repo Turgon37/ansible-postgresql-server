@@ -1,4 +1,15 @@
 ---
+
+- name: Ensure required directories exists
+  file:
+    path: '{{ item }}'
+    owner: '{{ postgresql_server__service_user }}'
+    group: '{{ postgresql_server__service_group }}'
+    mode: 0750
+    state: directory
+  with_items:
+    - '{{ postgresql_server__var_directory }}'
+
 - name: "Ensure service group '{{ postgresql_server__service_group }}' is present"
   group:
     name: '{{ postgresql_server__service_group }}'
@@ -28,7 +39,8 @@
   when: ansible_os_family == 'Debian'
   notify: ['restart-postgresql-server']
 
-- name: Ensure the locale is generated
+# Todo handle checkmode and changed_when
+- name: Ensure the locale for lc_collate and lc_ctype is generated
   command: "localedef -c -i {{ item.split('.')[0] }} -f {{ item.split('.')[1] }} {{ item }}"
   with_items:
     - '{{ postgresql_server__locale }}'
@@ -41,28 +53,8 @@
     path: '{{ postgresql_server__data_directory }}'
     owner: '{{ postgresql_server__service_user }}'
     group: '{{ postgresql_server__service_group }}'
-    state: directory
     mode: 0700
-  register: _postgresql_server__pgdata_dir_exist
-
-- name: Check whether the postgres data directory is initialized
-  stat:
-    path: '{{ postgresql_server__data_directory }}/PG_VERSION'
-  when: ansible_os_family == 'RedHat'
-  register: _postgresql_server__pgdata_dir_initialized
-
-- name: Initialize the database
-  become: true
-  become_user: '{{ postgresql_server__service_user }}'
-  command: >-
-    {{ postgresql_server__bin_directory }}/initdb
-    --pgdata={{ postgresql_server__data_directory }}
-    --locale={{ postgresql_server__locale }}
-    --encoding={{ postgresql_server__encoding }}
-  when: ansible_os_family == 'RedHat'
-    and (
-      _postgresql_server__pgdata_dir_exist.changed
-      or not _postgresql_server__pgdata_dir_initialized.stat.exists)
+    state: directory
 
 - name: Ensure configuration directory exists
   file:
@@ -89,21 +81,14 @@
     mode: 0640
   notify: ['reload-postgresql-server']
 
-- name: Update configuration file postgresql.conf
-  template:
-    src: 'postgresql.conf-{{ postgresql_server__version }}.j2'
+- name: Configure global settings into postgresql.conf
+  lineinfile:
     dest: '{{ postgresql_server__conf_directory }}/postgresql.conf'
+    regexp: "^#?{{ item.key }}.+$"
+    line: "{{ item.key }} = '{{ item.value if item.value is string else item.value.value }}'"
     owner: '{{ postgresql_server__service_user }}'
     group: '{{ postgresql_server__service_group }}'
     mode: 0640
-  notify: ['restart-postgresql-server']
-
-- name: Create symlink for postgresql.conf in data directory
-  file:
-    src: '{{ postgresql_server__conf_directory }}/postgresql.conf'
-    dest: '{{ postgresql_server__data_directory }}/postgresql.conf'
-    owner: '{{ postgresql_server__service_user }}'
-    group: '{{ postgresql_server__service_group }}'
-    force: true
-    state: link
-  notify: ['restart-postgresql-server']
+    state: "{{ 'present' if item.value is string else item.value.state|d('present') }}"
+  with_dict: '{{ postgresql_server__options }}'
+  notify: "{{ ['restart-postgresql-server'] if item.value.restart|d(false)|bool else ['reload-postgresql-server'] }}"

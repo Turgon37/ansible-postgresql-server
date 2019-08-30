@@ -9,4 +9,6 @@ postgresql_server__packages_names:
 # Used to execute initdb
 postgresql_server__bin_directory: '/usr/lib/postgresql/{{ postgresql_server__version }}/bin'
 
+postgresql_server__cluster_name: main
+
 postgresql_server__service_name: postgresql

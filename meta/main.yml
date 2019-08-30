@@ -9,6 +9,10 @@ galaxy_info:
     - name: EL
       versions:
         - 7
+    - name: Debian
+      versions:
+        - jessie
+        - stretch
   galaxy_tags:
     - postgresql
 

@@ -16,6 +16,11 @@ postgresql_server__packages_names:
 # Version of postgresql to install
 postgresql_server__version: 9.6
 
+postgresql_server__gpg_keys:
+  Debian:
+    - id: B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
+      url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+
 
 ### SERVICE CONFIGURATION
 # ---------------------------------------
@@ -48,8 +53,13 @@ postgresql_server__ctype: 'en_US.{{ postgresql_server__encoding }}'
 postgresql_server__admin_user: '{{ postgresql_server__service_user }}'
 postgresql_server__database_owner: '{{ postgresql_server__admin_user }}'
 
-# pg_hba.conf
-postgresql_server__default_hba:
+## pg_hba.conf
+
+# This file controls: which hosts are allowed to connect, how clients
+# are authenticated, which PostgreSQL user names they can use, which
+# databases they can access.  Records take one of these forms:
+
+postgresql_server__hba_rules_default:
   - type: local
     database: all
     user: '{{ postgresql_server__admin_user }}'
@@ -72,16 +82,20 @@ postgresql_server__default_hba:
     method: 'md5'
     comment: 'IPv6 local connections:'
 
-postgresql_server__global_hba: []
-postgresql_server__group_hba: []
-postgresql_server__host_hba: []
-postgresql_server__hba: '{{ postgresql_server__default_hba + postgresql_server__global_hba + postgresql_server__group_hba + postgresql_server__host_hba }}'
+postgresql_server__hba_rules_global: []
+postgresql_server__hba_rules_group: []
+postgresql_server__hba_rules_host: []
+postgresql_server__hba_rules: '{{
+  postgresql_server__hba_rules_default
+  |union(postgresql_server__hba_rules_global)
+  |union(postgresql_server__hba_rules_group)
+  |union(postgresql_server__hba_rules_host) }}'
 
 # List of users to be created
-postgresql_server__users: []
+postgresql_server__roles: []
 
 # Available profile for users specifications
-postgresql_server__profiles:
+postgresql_server__role_profiles:
   admin:
     connection_limit: 5
     role_flags:
@@ -98,33 +112,70 @@ postgresql_server__profiles:
 postgresql_server__databases: {}
 
 
-# postgresql.conf
-
-# ------------------------------------------------------------------------------
-# FILE LOCATIONS
-# ------------------------------------------------------------------------------
+### Configuration files
+# ---------------------------------------
 
 # Location of postgres configuration files here
-postgresql_server__conf_directory: "/etc/postgresql/{{ postgresql_server__version }}"
+postgresql_server__conf_directory:
+  "/etc/postgresql/{{ postgresql_server__version }}\
+  {{ (postgresql_server__cluster_name is defined)|ternary('/'~postgresql_server__cluster_name, '') }}"
 postgresql_server__conf_included_directory: "{{ postgresql_server__conf_directory }}/conf.d"
 
 # HBA (Host Based Authentication) file
-postgresql_server__hba_file: "{{ postgresql_server__conf_directory }}/pg_hba.conf"
+postgresql_server__hba_file: '{{ postgresql_server__conf_directory }}/pg_hba.conf'
 # Ident configuration file
-postgresql_server__ident_file: "{{ postgresql_server__conf_directory }}/pg_ident.conf"
+postgresql_server__ident_file: '{{ postgresql_server__conf_directory }}/pg_ident.conf'
 
 # Data directory
-postgresql_server__var_directory: "/var/lib/postgresql"
-postgresql_server__data_directory: "{{ postgresql_server__var_directory }}/{{ postgresql_server__version }}/data"
+postgresql_server__var_directory: /var/lib/postgresql
+postgresql_server__data_directory:
+  "{{ postgresql_server__var_directory }}/\
+  {{ postgresql_server__version }}\
+  {{ (postgresql_server__cluster_name is defined)|ternary('/'~postgresql_server__cluster_name, '') }}\
+  /data"
 
 
-# ------------------------------------------------------------------------------
-# CONNECTIONS AND AUTHENTICATION
-# ------------------------------------------------------------------------------
+### Postgresql settings
+# ---------------------------------------
+
 postgresql_server__listen_addresses:
   - 127.0.0.1
 postgresql_server__port: 5432
 
+
+postgresql_server__options_default:
+  data_directory:
+    value: '{{ postgresql_server__data_directory }}'
+    restart: true
+  hba_file:
+    value: '{{ postgresql_server__hba_file }}'
+    restart: true
+  ident_file:
+    value: '{{ postgresql_server__ident_file }}'
+    restart: true
+  listen_addresses:
+    value: "{{ postgresql_server__listen_addresses|join(',') }}"
+    restart: true
+  port:
+    value: '{{ postgresql_server__port|int }}'
+    restart: true
+  include_dir: '{{ postgresql_server__conf_included_directory }}'
+  cluster_name: "{{ postgresql_server__version }}{{ (postgresql_server__cluster_name is defined)|ternary('/'~postgresql_server__cluster_name, '') }}"
+  lc_messages: '{{ postgresql_server__locale }}'
+  lc_monetary: '{{ postgresql_server__locale }}'
+  lc_numeric: '{{ postgresql_server__locale }}'
+  lc_time: '{{ postgresql_server__locale }}'
+
+# Dict of options to apply for main configuration file
+postgresql_server__options_global: {}
+postgresql_server__options_group: {}
+postgresql_server__options_host: {}
+postgresql_server__options: '{{
+  postgresql_server__options_default
+  |combine(postgresql_server__options_global)
+  |combine(postgresql_server__options_group)
+  |combine(postgresql_server__options_host)
+  }}'
 
 # Yum settings
 postgresql_server__pgdg_dists:

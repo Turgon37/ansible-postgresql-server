@@ -2,13 +2,7 @@
 # Systemd unit file override to specify user/group as well as separate config
 # and data directories.
 [Service]
-User={{ postgresql_server__service_user }}
-Group={{ postgresql_server__service_group }}
-Environment=PGDATA={{ postgresql_server__data_directory }}
-ExecStartPre=
 {% if not postgresql_server__service_restartable|bool %}
 # Remove must restart stamp file
 ExecStartPre=-/usr/bin/env rm -f {{ postgresql_server__service_restart_stamp_file }}
 {% endif %}
-ExecStartPre={{ postgresql_server__bin_directory }}/postgresql{{ postgresql_server__version_terse }}-check-db-dir {{ postgresql_server__data_directory }}
-

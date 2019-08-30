@@ -1,0 +1,104 @@
+---
+
+# Init
+
+- name: Check user prerequisites
+  assert:
+    that:
+      - postgresql_server__role is defined
+      - postgresql_server__role.name is defined
+      - postgresql_server__role.name is match('^[a-zA-Z][a-zA-Z0-9-_]+$')
+      - postgresql_server__role.profile is not defined
+        or postgresql_server__role.profile in postgresql_server__role_profiles.keys()
+      - postgresql_server__role.profile is not defined
+        or (
+            postgresql_server__role.keys()
+            |intersect(postgresql_server__role_profiles[postgresql_server__role.profile].keys())
+          )|length == 0
+    msg: >-
+      postgresql_server__role must be defined with user specification.
+      You cannot set a user settings that is already set in the user profile
+  tags: ['always']
+
+- name: 'Apply role profile for {{ postgresql_server__role.name }}'
+  set_fact:
+    postgresql_server__role: '{{
+      postgresql_server__role
+      |combine(postgresql_server__role_profiles[postgresql_server__role.profile])
+    }}'
+  when: postgresql_server__role.profile is defined
+  no_log: true
+  tags: ['always']
+
+# Service
+
+- name: 'Ensure PostgreSQL is running for {{ postgresql_server__role.name }}'
+  service:
+    name: '{{ postgresql_server__service_name }}'
+    state: started
+  when: postgresql_server__service_enabled|bool
+  tags: ['postgresql-server', 'postgresql-server-users']
+
+- name: 'Fail if PostgreSQL cannot be running for {{ postgresql_server__role.name }}'
+  fail:
+    msg: PostgreSQL need to be running to apply users
+  when: not postgresql_server__service_enabled|bool
+  tags: ['postgresql-server', 'postgresql-server-users']
+
+# Remove
+
+- name: 'Revoke all user privileges from {{ postgresql_server__role.name }}'
+  become: true
+  become_user: '{{ postgresql_server__admin_user }}'
+  postgresql_privs:
+    database: '{{ item.database }}'
+    roles: '{{ postgresql_server__role.name }}'
+    privs: '{{ item.privs|d(omit) }}'
+    type: '{{ item.type|d(omit) }}'
+    objs: '{{ item.objs|d(omit) }}'
+    schema: '{{ item.schema|d(omit) }}'
+    login_user: '{{ postgresql_server__admin_user }}'
+    state: absent
+  with_items: '{{ postgresql_server__role.privileges|d([])|list }}'
+  when: postgresql_server__role.state|d('present') != 'present'
+  tags: ['postgresql-server', 'postgresql-server-users']
+
+# Add
+
+- name: 'Setup PostgreSQL role {{ postgresql_server__role.name }}'
+  become: true
+  become_user: '{{ postgresql_server__admin_user }}'
+  postgresql_user:
+    name: '{{ postgresql_server__role.name }}'
+    password: '{{ postgresql_server__role.password|d(omit) }}'
+    encrypted: '{{ postgresql_server__role.encrypted|d(true) }}'
+    expires: '{{ postgresql_server__role.expires|d(omit) }}'
+    conn_limit: '{{ postgresql_server__role.connection_limit|default(omit) }}'
+    role_attr_flags: "{{
+      (
+        postgresql_server__role.role_flags
+        if postgresql_server__role.role_flags is string
+        else postgresql_server__role.role_flags|join(',')
+      )
+      if postgresql_server__role.role_flags is defined
+      else omit }}"
+    port: '{{ postgresql_server__port }}'
+    login_user: '{{ postgresql_server__admin_user }}'
+    state: "{{ postgresql_server__role.state|d('present') }}"
+  tags: ['postgresql-server', 'postgresql-server-users']
+
+- name: 'Apply all role privileges {{ postgresql_server__role.name }}'
+  become: true
+  become_user: '{{ postgresql_server__admin_user }}'
+  postgresql_privs:
+    database: '{{ item.database }}'
+    roles: '{{ postgresql_server__role.name }}'
+    privs: '{{ item.privs|d(omit) }}'
+    type: '{{ item.type|d(omit) }}'
+    objs: '{{ item.objs|d(omit) }}'
+    schema: '{{ item.schema|d(omit) }}'
+    login_user: '{{ postgresql_server__admin_user }}'
+    state: "{{ item.state|d('present') }}"
+  with_items: '{{ postgresql_server__role.privileges|d([])|list }}'
+  when: postgresql_server__role.state|d('present') == 'present'
+  tags: ['postgresql-server', 'postgresql-server-users']
