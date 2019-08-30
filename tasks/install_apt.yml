@@ -16,7 +16,7 @@
         if (ansible_os_family in postgresql_server__gpg_keys)
         else ([])
       )
-    )}}'
+    ) }}'
   when: item.state|d('present') == 'present'
   register: _postgresql_server__gpg_download
   until: _postgresql_server__gpg_download is succeeded
@@ -41,7 +41,7 @@
         if (ansible_os_family in postgresql_server__gpg_keys)
         else ([])
       )
-    )}}'
+    ) }}'
   when: item.state|d('present') == 'present'
   check_mode: false
   tags: ['postgresql-server', 'postgresql-server-install']
@@ -62,7 +62,7 @@
         if (ansible_os_family in postgresql_server__gpg_keys)
         else ([])
       )
-    )}}'
+    ) }}'
   tags: ['postgresql-server', 'postgresql-server-install']
 
 - name: Add PostgreSQL repository
