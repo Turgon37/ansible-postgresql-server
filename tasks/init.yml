@@ -1,0 +1,17 @@
+---
+
+- name: Assert host-based authentication rules
+  assert:
+    that:
+      - item.type is defined
+        and item.type in ['local', 'host', 'hostssl', 'hostnossl']
+      - item.database is defined
+      - item.user is defined
+      - item.method is defined
+        and item.method in ['trust', 'reject', 'md5', 'password', 'gss', 'sspi', 'krb5', 'ident', 'peer', 'ldap', 'radius', 'cert', 'pam']
+  with_items: '{{ postgresql_server__hba_rules|list }}'
+
+# local      DATABASE  USER  METHOD  [OPTIONS]
+# host       DATABASE  USER  ADDRESS  METHOD  [OPTIONS]
+# hostssl    DATABASE  USER  ADDRESS  METHOD  [OPTIONS]
+# hostnossl  DATABASE  USER  ADDRESS  METHOD  [OPTIONS]

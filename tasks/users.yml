@@ -1,38 +1,5 @@
 ---
 
-- name: Assert users settings
-  fail:
-    msg: You cannot set a user settings that is already set in the user profile
-  with_dict: "{{ postgresql_server__users }}"
-  when: item.value.profile is defined and item.value.profile in postgresql_server__profiles.keys()
-          and (item.value.keys() | intersect(postgresql_server__profiles[item.value.profile].keys()) ) | length != 0
-  tags: ['always']
-
-- name: Check users profile
-  assert:
-    that:
-      - item.value.profile is not defined
-        or item.value.profile is defined
-           and item.value.profile in postgresql_server__profiles.keys()
-  with_dict: '{{ postgresql_server__users }}'
-  tags: ['always']
-
-- name: Apply user profile
-  set_fact:
-    postgresql_server__users: '{{
-      postgresql_server__users
-      |combine({item.key: (item.value | combine(postgresql_server__profiles[item.value.profile]))}) }}'
-  with_dict: '{{ postgresql_server__users }}'
-  when: item.value.profile is defined
-    and item.value.profile in postgresql_server__profiles.keys()
-  tags: ['always']
-
-- name: Ensure PostgreSQL is running
-  service:
-    name: '{{ postgresql_server__service_name }}'
-    state: started
-  tags: ['postgresql-server', 'postgresql-server-users']
-
 - name: Setup PostgreSQL users
   become: true
   become_user: '{{ postgresql_server__admin_user }}'
@@ -41,8 +8,15 @@
     password: '{{ item.value.password|d(omit) }}'
     encrypted: '{{ item.value.encrypted|d(true) }}'
     expires: '{{ item.value.expires|d(omit) }}'
-    # conn_limit: "{{ item.value.connection_limit | default(omit) }}"
-    role_attr_flags: "{% if item.value.role_flags is defined %}{{ item.value.role_flags if item.value.role_flags is string else item.value.role_flags|join(',') }}{% else %}{{ omit }}{% endif %}"
+    # conn_limit: '{{ item.value.connection_limit|default(omit) }}'
+    role_attr_flags: "{{
+      (
+        item.value.role_flags
+        if item.value.role_flags is string
+        else item.value.role_flags|join(',')
+      )
+      if item.value.role_flags is defined
+      else omit }}"
     port: '{{ postgresql_server__port }}'
     login_user: '{{ postgresql_server__admin_user }}'
     state: "{{ item.value.state|d('present') }}"

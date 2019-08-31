@@ -17,6 +17,10 @@
     msg: This module only works with systemd
   when: not ansible_service_mgr in ['systemd']
 
+- name: Importing initialization tasks
+  import_tasks: init.yml
+  tags: ['always']
+
 - name: Importing install tasks
   import_tasks: install.yml
   tags: ['postgresql-server', 'postgresql-server-install']
@@ -25,6 +29,10 @@
   import_tasks: configure.yml
   tags: ['postgresql-server', 'postgresql-server-configure']
 
+- name: Importing database initializing tasks
+  import_tasks: initdb.yml
+  tags: ['postgresql-server', 'postgresql-server-configure', 'postgresql-server-initdb']
+
 - name: Importing service tasks
   import_tasks: service.yml
   tags: ['postgresql-server', 'postgresql-server-service']
@@ -32,12 +40,28 @@
 - meta: flush_handlers
   tags: ['always']
 
-- name: Optionally including users tasks
-  include_tasks: users.yml
-  when: postgresql_server__service_enabled|bool
-  tags: ['postgresql-server', 'postgresql-server-users']
-
-- name: Optionally including databases tasks
-  include_tasks: databases.yml
+- name: Configuring databases
+  include_tasks: types/database.yml
+  vars:
+    postgresql_server__database: "{{
+      outer_item.value
+      |combine({'name': outer_item.key})
+    }}"
+  with_dict: '{{ postgresql_server__databases }}'
+  loop_control:
+    loop_var: outer_item
   when: postgresql_server__service_enabled|bool
   tags: ['postgresql-server', 'postgresql-server-databases']
+
+- name: Configuring roles
+  include_tasks: types/role.yml
+  vars:
+    postgresql_server__role: "{{
+      outer_item.value
+      |combine({'name': outer_item.key})
+    }}"
+  with_dict: '{{ postgresql_server__roles }}'
+  loop_control:
+    loop_var: outer_item
+  when: postgresql_server__service_enabled|bool
+  tags: ['postgresql-server', 'postgresql-server-users']
